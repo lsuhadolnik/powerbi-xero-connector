@@ -8,6 +8,8 @@ windowHeight = 1000;
 
 // TODO - Refresh token
 // TODO - Pagination
+// TODO - Load into PowerBI
+
 
 //
 // Exported functions
