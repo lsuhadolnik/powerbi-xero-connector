@@ -6,6 +6,9 @@ redirect_uri = "https://oauth.powerbi.com/views/oauthredirect.html";
 windowWidth = 1200;
 windowHeight = 1000;
 
+// TODO - Refresh token
+// TODO - Pagination
+
 //
 // Exported functions
 //

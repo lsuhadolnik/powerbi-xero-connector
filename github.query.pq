@@ -3,12 +3,11 @@ let
     source = GithubSample.Contents("https://api.xero.com", "/connections", [
     ]),
     org = source{0}[tenantId],
-    Contacts = GithubSample.Contents("https://api.xero.com", "/api.xro/2.0/Invoices", [
+    Contacts = GithubSample.Contents("https://api.xero.com", "/api.xro/2.0/Accounts", [
         Headers = [
             #"Accept" = "application/json",
             #"xero-tenant-id" = org
         ]
     ]),
-    Conts = Table.FromRecords(Contacts[Invoices]),
-    Count = Table.RowCount(Conts)
-     in Count
+    Conts = List.Count(Contacts[Accounts])
+     in Conts
