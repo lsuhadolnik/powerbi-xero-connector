@@ -6,10 +6,10 @@ redirect_uri = "https://oauth.powerbi.com/views/oauthredirect.html";
 windowWidth = 1200;
 windowHeight = 1000;
 
-// TODO - Refresh token
+// DONE - Refresh token -> Used the example
 // TODO - Pagination
 // DONE - Load into PowerBI -> MAKE SURE TO INCLUDE THE PUBLISH PROPERTY!!!
-// TODO - TestConnection
+// DONE - TestConnection -> MAKE SURE TO PROVIDE THE DEFAULT VALUE FOR PATH
 
 
 //
@@ -70,7 +70,7 @@ GithubSample.Icons = [
 //
 Github.Contents = (baseUrl as text, optional path as text, optional org as record) =>
     let
-        url = baseUrl & (if path = null then "" else path),
+        url = baseUrl & (if path = null then "/connections" else path),
         content = Web.Contents(url, org),
         json = Json.Document(content)
     in
