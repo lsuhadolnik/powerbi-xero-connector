@@ -6,10 +6,13 @@ redirect_uri = "https://oauth.powerbi.com/views/oauthredirect.html";
 windowWidth = 1200;
 windowHeight = 1000;
 
+base_url = "https://api.xero.com";
+
 // DONE - Refresh token -> Used the example
-// TODO - Pagination
+// TODO - Pagination -> No need.
 // DONE - Load into PowerBI -> MAKE SURE TO INCLUDE THE PUBLISH PROPERTY!!!
 // DONE - TestConnection -> MAKE SURE TO PROVIDE THE DEFAULT VALUE FOR PATH
+// DONE :( - Cannot auto refresh the source without a local gateway
 
 
 //
@@ -21,13 +24,13 @@ windowHeight = 1000;
 // All data source functions associated to the same Data Source Kind must have a matching set of required
 // function parameters, including type, name, and the order in which they appear.
 [DataSource.Kind = "GithubSample", Publish="GithubSample.UI"]
-shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (baseUrl as Uri.Type, optional path as text, optional org as record) as any);
+shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (optional path as text, optional org as record) as any);
 
 //
 // Data Source definition
 //
 GithubSample = [
-    TestConnection = (dataSourcePath) => {"GithubSample.Contents", dataSourcePath},
+    TestConnection = (dataSourcePath) => {"GithubSample.Contents"},
     Authentication = [
         OAuth = [
             StartLogin = StartLogin,
@@ -68,9 +71,13 @@ GithubSample.Icons = [
 // Next link value as meta on the returned json response. We parse the json
 // result (which will be a list of records) into a table.
 //
-Github.Contents = (baseUrl as text, optional path as text, optional org as record) =>
+Github.Contents = (optional path as text, optional org as record) =>
     let
-        url = baseUrl & (if path = null then "/connections" else path),
+        defaultHeaders = [
+            #"Accept" = "application/json"
+        ],
+        params = [],
+        url = base_url & (if path = null then "/connections" else path),
         content = Web.Contents(url, org),
         json = Json.Document(content)
     in
