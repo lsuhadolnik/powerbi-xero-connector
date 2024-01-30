@@ -8,7 +8,8 @@ windowHeight = 1000;
 
 // TODO - Refresh token
 // TODO - Pagination
-// TODO - Load into PowerBI
+// TODO - Load into PowerBI -> MAKE SURE TO INCLUDE THE PUBLISH PROPERTY!!!
+// TODO - TestConnection
 
 
 //
@@ -19,7 +20,7 @@ windowHeight = 1000;
 // credentials to use during evaluation. Credential matching is done based on the function's parameters.
 // All data source functions associated to the same Data Source Kind must have a matching set of required
 // function parameters, including type, name, and the order in which they appear.
-[DataSource.Kind = "GithubSample"]
+[DataSource.Kind = "GithubSample", Publish="GithubSample.UI"]
 shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (baseUrl as text, optional path as text, optional org as record) as any);
 
 //
@@ -191,3 +192,5 @@ Table.GenerateByPage = (getNextPage as function) as table =>
                 Table.ExpandTableColumn(tableOfPages, "Column1", Table.ColumnNames(firstRow[Column1])),
                 Value.Type(firstRow[Column1])
             );
+
+
