@@ -20,7 +20,7 @@
     <SuppressCellErrors>False</SuppressCellErrors>
     <MaxRows>1000</MaxRows>
     <ExtensionProject>Yes</ExtensionProject>
-    <Name>github</Name>
+    <Name>xeroconnector</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>false</DebugSymbols>
@@ -38,40 +38,34 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="github.pq">
+    <Compile Include="xeroconnector.pq">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github16.png">
+    <Compile Include="xero16.png">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github20.png">
+    <Compile Include="xero20.png">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github24.png">
+    <Compile Include="xero24.png">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github32.png">
+    <Compile Include="xero32.png">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github40.png">
+    <Compile Include="xero40.png">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github48.png">
+    <Compile Include="xero48.png">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="github64.png">
+    <Compile Include="xero64.png">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="resources.resx">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="client_id">
-      <SubType>Content</SubType>
-    </Compile>
-    <Compile Include="client_secret">
-      <SubType>Content</SubType>
-    </Compile>
-    <Content Include="github.query.pq">
+    <Content Include="xeroconnector.query.pq">
       <SubType>Code</SubType>
     </Content>
     <Content Include="README.md">
