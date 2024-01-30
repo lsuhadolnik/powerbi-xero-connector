@@ -1,21 +1,7 @@
 ﻿section GithubSample;
 
-//
-// OAuth configuration settings
-//
-// You MUST replace the values below for values for your own application.
-// Signin to GitHub and navigate to https://github.com/settings/applications/new.
-// Follow the steps and obtain your client_id and client_secret.
-// Set your Redirect URI value in your application registration to match the value below.
-// Update the values within the "client_id" and "client_secret" files in the project.
-//
-// Note: due to incompatibilities with the Internet Explorer control used in Visual Studio,
-// you will not be able to authorize a new github application during the OAuth flow. You can workaround
-// this by loading your extension in Power BI Desktop, and completing the OAuth flow there.
-// Once the application has been authorized for a given user, then the OAuth flow will work when
-// run in Visual Studio.
-client_id = Text.FromBinary(Extension.Contents("client_id"));
-client_secret = Text.FromBinary(Extension.Contents("client_secret"));
+client_id = "53FDD514B6F746158EF63BB1EA077311";
+
 redirect_uri = "https://oauth.powerbi.com/views/oauthredirect.html";
 windowWidth = 1200;
 windowHeight = 1000;
@@ -28,13 +14,8 @@ windowHeight = 1000;
 // credentials to use during evaluation. Credential matching is done based on the function's parameters.
 // All data source functions associated to the same Data Source Kind must have a matching set of required
 // function parameters, including type, name, and the order in which they appear.
-[DataSource.Kind = "GithubSample", Publish = "GithubSample.UI"]
-shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (url as Uri.Type) as any);
-
 [DataSource.Kind = "GithubSample"]
-shared GithubSample.PagedTable = Value.ReplaceType(
-    Github.PagedTable, type function (url as Uri.Type) as nullable table
-);
+shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (baseUrl as text, optional path as text, optional org as record) as any);
 
 //
 // Data Source definition
@@ -80,14 +61,12 @@ GithubSample.Icons = [
 // Next link value as meta on the returned json response. We parse the json
 // result (which will be a list of records) into a table.
 //
-Github.Contents = (url as text) =>
+Github.Contents = (baseUrl as text, optional path as text, optional org as record) =>
     let
-        content = Web.Contents(url),
-        link = GetNextLink(content),
-        json = Json.Document(content),
-        table = Table.FromList(json, Splitter.SplitByNothing())
+        content = Web.Contents(baseUrl & path, org),
+        json = Json.Document(content)
     in
-        table meta [Next = link];
+        json;
 
 Github.PagedTable = (url as text) =>
     Table.GenerateByPage(
@@ -135,13 +114,19 @@ GetNextLink = (response, optional request) =>
 //
 StartLogin = (resourceUrl, state, display) =>
     let
-        AuthorizeUrl = "https://github.com/login/oauth/authorize?"
+        plainTextCodeVerifier = Text.NewGuid() & Text.NewGuid(),
+        bEnc = (s) => Text.Replace(Text.Replace(Text.BeforeDelimiter(Binary.ToText(s,BinaryEncoding.Base64),"="),"+","-"),"/","_"),
+        codeVerifier = bEnc(Crypto.CreateHash(CryptoAlgorithm.SHA256, Text.ToBinary(plainTextCodeVerifier))),
+        AuthorizeUrl = "https://login.xero.com/identity/connect/authorize?"
             & Uri.BuildQueryString(
                 [
-                    client_id = client_id,
-                    scope = "user, repo",
+                    response_type = "code",
+                    client_id = "53FDD514B6F746158EF63BB1EA077311",
+                    scope = "openid profile offline_access email accounting.transactions.read accounting.contacts.read",
                     state = state,
-                    redirect_uri = redirect_uri
+                    redirect_uri = redirect_uri,
+                    code_challenge_method = "S256",
+                    code_challenge = codeVerifier
                 ]
             )
     in
@@ -150,23 +135,24 @@ StartLogin = (resourceUrl, state, display) =>
             CallbackUri = redirect_uri,
             WindowHeight = windowHeight,
             WindowWidth = windowWidth,
-            Context = null
+            Context = plainTextCodeVerifier
         ];
 
-FinishLogin = (context, callbackUri, state) => let Parts = Uri.Parts(callbackUri)[Query] in TokenMethod(Parts[code]);
+FinishLogin = (context, callbackUri, state) => let Parts = Uri.Parts(callbackUri)[Query] in TokenMethod(Parts[code], context);
 
-TokenMethod = (code) =>
+TokenMethod = (code, context) =>
     let
         Response = Web.Contents(
-            "https://github.com/login/oauth/access_token",
+            "https://identity.xero.com" & "/connect/token",
             [
                 Content = Text.ToBinary(
                     Uri.BuildQueryString(
                         [
+                            grant_type = "authorization_code",
                             client_id = client_id,
-                            client_secret = client_secret,
                             code = code,
-                            redirect_uri = redirect_uri
+                            redirect_uri = redirect_uri,
+                            code_verifier = context
                         ]
                     )
                 ),
