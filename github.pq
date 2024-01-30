@@ -8,7 +8,7 @@ windowHeight = 1000;
 
 // TODO - Refresh token
 // TODO - Pagination
-// TODO - Load into PowerBI -> MAKE SURE TO INCLUDE THE PUBLISH PROPERTY!!!
+// DONE - Load into PowerBI -> MAKE SURE TO INCLUDE THE PUBLISH PROPERTY!!!
 // TODO - TestConnection
 
 
@@ -21,7 +21,7 @@ windowHeight = 1000;
 // All data source functions associated to the same Data Source Kind must have a matching set of required
 // function parameters, including type, name, and the order in which they appear.
 [DataSource.Kind = "GithubSample", Publish="GithubSample.UI"]
-shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (baseUrl as text, optional path as text, optional org as record) as any);
+shared GithubSample.Contents = Value.ReplaceType(Github.Contents, type function (baseUrl as Uri.Type, optional path as text, optional org as record) as any);
 
 //
 // Data Source definition
@@ -32,6 +32,7 @@ GithubSample = [
         OAuth = [
             StartLogin = StartLogin,
             FinishLogin = FinishLogin,
+            Refresh = Refresh,
             Label = Extension.LoadString("AuthenticationLabel")
         ]
     ]
@@ -69,7 +70,8 @@ GithubSample.Icons = [
 //
 Github.Contents = (baseUrl as text, optional path as text, optional org as record) =>
     let
-        content = Web.Contents(baseUrl & path, org),
+        url = baseUrl & (if path = null then "" else path),
+        content = Web.Contents(url, org),
         json = Json.Document(content)
     in
         json;
@@ -144,30 +146,9 @@ StartLogin = (resourceUrl, state, display) =>
             Context = plainTextCodeVerifier
         ];
 
-FinishLogin = (context, callbackUri, state) => let Parts = Uri.Parts(callbackUri)[Query] in TokenMethod(Parts[code], context);
-
-TokenMethod = (code, context) =>
-    let
-        Response = Web.Contents(
-            "https://identity.xero.com" & "/connect/token",
-            [
-                Content = Text.ToBinary(
-                    Uri.BuildQueryString(
-                        [
-                            grant_type = "authorization_code",
-                            client_id = client_id,
-                            code = code,
-                            redirect_uri = redirect_uri,
-                            code_verifier = context
-                        ]
-                    )
-                ),
-                Headers = [#"Content-type" = "application/x-www-form-urlencoded", #"Accept" = "application/json"]
-            ]
-        ),
-        Parts = Json.Document(Response)
-    in
-        Parts;
+FinishLogin = (context, callbackUri, state) => let 
+    Parts = Uri.Parts(callbackUri)[Query] 
+in TokenMethod(Parts[code], "authorization_code", context);
 
 //
 // Common code
@@ -192,5 +173,43 @@ Table.GenerateByPage = (getNextPage as function) as table =>
                 Table.ExpandTableColumn(tableOfPages, "Column1", Table.ColumnNames(firstRow[Column1])),
                 Value.Type(firstRow[Column1])
             );
+
+
+TokenMethod = (code, grant_type, optional verifier) =>
+    let
+        codeVerifier = if (verifier <> null) then [code_verifier = verifier] else [],
+        codeParameter = if (grant_type = "authorization_code") then [code = code] else [refresh_token = code],
+        query = codeVerifier
+            & codeParameter
+            & [
+                client_id = client_id,
+                // Native client flows should not require a client_secret when using PKCE, but some still do.
+                // client_secret = client_secret,
+                grant_type = grant_type,
+                redirect_uri = redirect_uri
+            ],
+        // Set this if your API returns a non-2xx status for login failures
+        // ManualHandlingStatusCodes = {400, 403}
+        ManualHandlingStatusCodes = {},
+        Response = Web.Contents(
+            "https://identity.xero.com/connect/token",
+            [
+                Content = Text.ToBinary(Uri.BuildQueryString(query)),
+                Headers = [
+                    #"Content-type" = "application/x-www-form-urlencoded", 
+                    #"Accept" = "application/json"
+                ],
+                ManualStatusHandling = ManualHandlingStatusCodes
+            ]
+        ),
+        Parts = Json.Document(Response)
+    in
+        // check for error in response
+        if (Parts[error]? <> null) then
+            error Error.Record(Parts[error], Parts[message]?)
+        else
+            Parts;
+
+Refresh = (resourceUrl, refresh_token) => TokenMethod(refresh_token, "refresh_token");
 
 
