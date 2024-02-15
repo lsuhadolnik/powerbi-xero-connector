@@ -116,16 +116,20 @@ Refresh = (resourceUrl, refresh_token) => TokenMethod(refresh_token, "refresh_to
 // All data source functions associated to the same Data Source Kind must have a matching set of REQUIRED
 // function parameters, including type, name, and the order in which they appear.
 [DataSource.Kind = "XeroConnector", Publish="XeroConnector.UI"]
-shared XeroConnector.Contents = Value.ReplaceType(Xero.Contents, type function (optional path as text, optional org as record) as any);
+shared XeroConnector.Contents = Value.ReplaceType(Xero.Contents, type function (optional endpoint as text, optional tenantId as text, optional additionalParams as record) as any);
 
-Xero.Contents = (optional path as text, optional org as record) =>
+Xero.Contents = (optional endpoint as text, optional tenantId as text, optional additionalParams as record) =>
     let
+        connectionsPath = base_url & "/connections",
         defaultHeaders = [
             #"Accept" = "application/json"
         ],
         params = [],
-        url = base_url & (if path = null then "/connections" else path),
-        content = Web.Contents(url, org),
+        url = (if endpoint = null then connectionsPath else endpoint),
+        content = Web.Contents(url, [
+            Headers = defaultHeaders & 
+            (if tenantId = null then [] else [#"xero-tenant-id" = tenantId])
+        ]),
         json = Json.Document(content)
     in
         json;
